@@ -24,7 +24,7 @@
 [Usage](#usage)<br>
 [Specify the section to run](#specify-the-section-to-run)<br>
 [Filenames as tags](#filenames-as-tags)<br>
-[Override output colouring](#use-colour)<br>
+[Override output colouring](#override-output-colouring)<br>
 
 Catch works quite nicely without any command line options at all - but for those times when you want greater control the following options are available.
 Click one of the followings links to take you straight to that option - or scroll on to browse the available options.
@@ -124,7 +124,9 @@ The JUnit reporter is an xml format that follows the structure of the JUnit XML 
 ## Breaking into the debugger
 <pre>-b, --break</pre>
 
-In some IDEs (currently XCode and Visual Studio) it is possible for Catch to break into the debugger on a test failure. This can be very helpful during debug sessions - especially when there is more than one path through a particular test.
+Under most debuggers Catch2 is capable of automatically breaking on a test
+failure. This allows the user to see the current state of the test during
+failure.
 
 <a id="showing-results-for-successful-tests"></a>
 ## Showing results for successful tests

@@ -6,8 +6,7 @@
  */
 
 #include "catch_output_redirect.h"
-
-
+#include "catch_enforce.h"
 
 #include <cstdio>
 #include <cstring>
@@ -15,14 +14,17 @@
 #include <sstream>
 #include <stdexcept>
 
-#if defined(_MSC_VER)
-#include <io.h>      //_dup and _dup2
-#define dup _dup
-#define dup2 _dup2
-#define fileno _fileno
-#else
-#include <unistd.h>  // dup and dup2
+#if defined(CATCH_CONFIG_NEW_CAPTURE)
+    #if defined(_MSC_VER)
+    #include <io.h>      //_dup and _dup2
+    #define dup _dup
+    #define dup2 _dup2
+    #define fileno _fileno
+    #else
+    #include <unistd.h>  // dup and dup2
+    #endif
 #endif
+
 
 namespace Catch {
 
@@ -48,25 +50,26 @@ namespace Catch {
     auto RedirectedStdErr::str() const -> std::string { return m_rss.str(); }
 
 
+#if defined(CATCH_CONFIG_NEW_CAPTURE)
 
 #if defined(_MSC_VER)
     TempFile::TempFile() {
         if (tmpnam_s(m_buffer)) {
-            throw std::runtime_error("Could not get a temp filename");
+            CATCH_RUNTIME_ERROR("Could not get a temp filename");
         }
         if (fopen_s(&m_file, m_buffer, "w")) {
             char buffer[100];
             if (strerror_s(buffer, errno)) {
-                throw std::runtime_error("Could not translate errno to string");
+                CATCH_RUNTIME_ERROR("Could not translate errno to a string");
             }
-            throw std::runtime_error("Could not open the temp file: " + std::string(m_buffer) + buffer);
+            CATCH_RUNTIME_ERROR("Coul dnot open the temp file: '" << m_buffer << "' because: " << buffer);
         }
     }
 #else
     TempFile::TempFile() {
         m_file = std::tmpfile();
         if (!m_file) {
-            throw std::runtime_error("Could not create a temp file.");
+            CATCH_RUNTIME_ERROR("Could not create a temp file.");
         }
     }
 
@@ -122,11 +125,14 @@ namespace Catch {
         m_stderrDest += m_stderrFile.getContents();
     }
 
+#endif // CATCH_CONFIG_NEW_CAPTURE
 
 } // namespace Catch
 
-#if defined(_MSC_VER)
-#undef dup
-#undef dup2
-#undef fileno
+#if defined(CATCH_CONFIG_NEW_CAPTURE)
+    #if defined(_MSC_VER)
+    #undef dup
+    #undef dup2
+    #undef fileno
+    #endif
 #endif

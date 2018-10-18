@@ -8,19 +8,23 @@
 #ifndef TWOBLUECUBES_CATCH_MESSAGE_H_INCLUDED
 #define TWOBLUECUBES_CATCH_MESSAGE_H_INCLUDED
 
-#include <string>
 #include "catch_result_type.h"
 #include "catch_common.h"
 #include "catch_stream.h"
+#include "catch_interfaces_capture.h"
+#include "catch_tostring.h"
+
+#include <string>
+#include <vector>
 
 namespace Catch {
 
     struct MessageInfo {
-        MessageInfo(    std::string const& _macroName,
+        MessageInfo(    StringRef const& _macroName,
                         SourceLineInfo const& _lineInfo,
                         ResultWas::OfType _type );
 
-        std::string macroName;
+        StringRef macroName;
         std::string message;
         SourceLineInfo lineInfo;
         ResultWas::OfType type;
@@ -44,7 +48,7 @@ namespace Catch {
     };
 
     struct MessageBuilder : MessageStream {
-        MessageBuilder( std::string const& macroName,
+        MessageBuilder( StringRef const& macroName,
                         SourceLineInfo const& lineInfo,
                         ResultWas::OfType type );
 
@@ -63,6 +67,28 @@ namespace Catch {
         ~ScopedMessage();
 
         MessageInfo m_info;
+    };
+
+    class Capturer {
+        std::vector<MessageInfo> m_messages;
+        IResultCapture& m_resultCapture = getResultCapture();
+        size_t m_captured = 0;
+    public:
+        Capturer( StringRef macroName, SourceLineInfo const& lineInfo, ResultWas::OfType resultType, StringRef names );
+        ~Capturer();
+
+        void captureValue( size_t index, StringRef value );
+
+        template<typename T>
+        void captureValues( size_t index, T&& value ) {
+            captureValue( index, Catch::Detail::stringify( value ) );
+        }
+
+        template<typename T, typename... Ts>
+        void captureValues( size_t index, T&& value, Ts&&... values ) {
+            captureValues( index, value );
+            captureValues( index+1, values... );
+        }
     };
 
 } // end namespace Catch

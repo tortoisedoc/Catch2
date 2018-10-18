@@ -14,6 +14,7 @@
 // CATCH_CONFIG_COUNTER : is the __COUNTER__ macro supported?
 // CATCH_CONFIG_WINDOWS_SEH : is Windows SEH supported?
 // CATCH_CONFIG_POSIX_SIGNALS : are POSIX signals supported?
+// CATCH_CONFIG_DISABLE_EXCEPTIONS : Are exceptions enabled?
 // ****************
 // Note to maintainers: if new toggles are added please document them
 // in configuration.md, too
@@ -28,11 +29,11 @@
 
 #ifdef __cplusplus
 
-#  if __cplusplus >= 201402L
+#  if (__cplusplus >= 201402L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
 #    define CATCH_CPP14_OR_GREATER
 #  endif
 
-#  if __cplusplus >= 201703L
+#  if (__cplusplus >= 201703L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 #    define CATCH_CPP17_OR_GREATER
 #  endif
 
@@ -55,6 +56,12 @@
             _Pragma( "clang diagnostic push" ) \
             _Pragma( "clang diagnostic ignored \"-Wparentheses\"" )
 #       define CATCH_INTERNAL_UNSUPPRESS_PARENTHESES_WARNINGS \
+            _Pragma( "clang diagnostic pop" )
+
+#       define CATCH_INTERNAL_SUPPRESS_UNUSED_WARNINGS \
+            _Pragma( "clang diagnostic push" ) \
+            _Pragma( "clang diagnostic ignored \"-Wunused-variable\"" )
+#       define CATCH_INTERNAL_UNSUPPRESS_UNUSED_WARNINGS \
             _Pragma( "clang diagnostic pop" )
 
 #endif // __clang__
@@ -90,13 +97,26 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// PS4
+#if defined(__ORBIS__)
+#    define CATCH_INTERNAL_CONFIG_NO_NEW_CAPTURE
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // Cygwin
 #ifdef __CYGWIN__
 
 // Required for some versions of Cygwin to declare gettimeofday
 // see: http://stackoverflow.com/questions/36901803/gettimeofday-not-declared-in-this-scope-cygwin
 #   define _BSD_SOURCE
+// some versions of cygwin (most) do not support std::to_string. Use the libstd check. 
+// https://gcc.gnu.org/onlinedocs/gcc-4.8.2/libstdc++/api/a01053_source.html line 2812-2813
+# if !((__cplusplus >= 201103L) && defined(_GLIBCXX_USE_C99) \
+	       && !defined(_GLIBCXX_HAVE_BROKEN_VSWPRINTF))
 
+#	define CATCH_INTERNAL_CONFIG_NO_CPP11_TO_STRING
+
+# endif
 #endif // __CYGWIN__
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +139,12 @@
 #endif // _MSC_VER
 
 ////////////////////////////////////////////////////////////////////////////////
+// Check if we are compiled with -fno-exceptions or equivalent
+#if defined(__EXCEPTIONS) || defined(__cpp_exceptions) || defined(_CPPUNWIND)
+#  define CATCH_INTERNAL_CONFIG_EXCEPTIONS_ENABLED
+#endif
 
+////////////////////////////////////////////////////////////////////////////////
 // DJGPP
 #ifdef __DJGPP__
 #  define CATCH_INTERNAL_CONFIG_NO_WCHAR
@@ -135,6 +160,33 @@
 #if ( !defined(__JETBRAINS_IDE__) || __JETBRAINS_IDE__ >= 20170300L )
     #define CATCH_INTERNAL_CONFIG_COUNTER
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Check if string_view is available and usable
+// The check is split apart to work around v140 (VS2015) preprocessor issue...
+#if defined(__has_include)
+#if __has_include(<string_view>) && defined(CATCH_CPP17_OR_GREATER)
+#    define CATCH_INTERNAL_CONFIG_CPP17_STRING_VIEW
+#endif
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Check if variant is available and usable
+#if defined(__has_include)
+#  if __has_include(<variant>) && defined(CATCH_CPP17_OR_GREATER)
+#    if defined(__clang__) && (__clang_major__ < 8)
+       // work around clang bug with libstdc++ https://bugs.llvm.org/show_bug.cgi?id=31852
+       // fix should be in clang 8, workaround in libstdc++ 8.2
+#      include <ciso646>
+#      if defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE < 9)
+#        define CATCH_CONFIG_NO_CPP17_VARIANT
+#     else
+#        define CATCH_INTERNAL_CONFIG_CPP17_VARIANT
+#      endif // defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE < 9)
+#    endif // defined(__clang__) && (__clang_major__ < 8)
+#  endif // __has_include(<variant>) && defined(CATCH_CPP17_OR_GREATER)
+#endif // __has_include
+
 
 #if defined(CATCH_INTERNAL_CONFIG_COUNTER) && !defined(CATCH_CONFIG_NO_COUNTER) && !defined(CATCH_CONFIG_COUNTER)
 #   define CATCH_CONFIG_COUNTER
@@ -159,6 +211,25 @@
 #  define CATCH_CONFIG_CPP17_UNCAUGHT_EXCEPTIONS
 #endif
 
+#if defined(CATCH_INTERNAL_CONFIG_CPP17_STRING_VIEW) && !defined(CATCH_CONFIG_NO_CPP17_STRING_VIEW) && !defined(CATCH_CONFIG_CPP17_STRING_VIEW)
+#  define CATCH_CONFIG_CPP17_STRING_VIEW
+#endif
+
+#if defined(CATCH_INTERNAL_CONFIG_CPP17_VARIANT) && !defined(CATCH_CONFIG_NO_CPP17_VARIANT) && !defined(CATCH_CONFIG_CPP17_VARIANT)
+#  define CATCH_CONFIG_CPP17_VARIANT
+#endif
+
+#if defined(CATCH_CONFIG_EXPERIMENTAL_REDIRECT)
+#  define CATCH_INTERNAL_CONFIG_NEW_CAPTURE
+#endif
+
+#if defined(CATCH_INTERNAL_CONFIG_NEW_CAPTURE) && !defined(CATCH_INTERNAL_CONFIG_NO_NEW_CAPTURE) && !defined(CATCH_CONFIG_NO_NEW_CAPTURE) && !defined(CATCH_CONFIG_NEW_CAPTURE)
+#  define CATCH_CONFIG_NEW_CAPTURE
+#endif
+
+#if !defined(CATCH_INTERNAL_CONFIG_EXCEPTIONS_ENABLED) && !defined(CATCH_CONFIG_DISABLE_EXCEPTIONS)
+#  define CATCH_CONFIG_DISABLE_EXCEPTIONS
+#endif
 
 #if !defined(CATCH_INTERNAL_SUPPRESS_PARENTHESES_WARNINGS)
 #   define CATCH_INTERNAL_SUPPRESS_PARENTHESES_WARNINGS
@@ -167,6 +238,20 @@
 #if !defined(CATCH_INTERNAL_SUPPRESS_GLOBALS_WARNINGS)
 #   define CATCH_INTERNAL_SUPPRESS_GLOBALS_WARNINGS
 #   define CATCH_INTERNAL_UNSUPPRESS_GLOBALS_WARNINGS
+#endif
+#if !defined(CATCH_INTERNAL_SUPPRESS_UNUSED_WARNINGS)
+#   define CATCH_INTERNAL_SUPPRESS_UNUSED_WARNINGS
+#   define CATCH_INTERNAL_UNSUPPRESS_UNUSED_WARNINGS
+#endif
+
+#if defined(CATCH_CONFIG_DISABLE_EXCEPTIONS)
+#define CATCH_TRY if ((true))
+#define CATCH_CATCH_ALL if ((false))
+#define CATCH_CATCH_ANON(type) if ((false))
+#else
+#define CATCH_TRY try
+#define CATCH_CATCH_ALL catch (...)
+#define CATCH_CATCH_ANON(type) catch (type)
 #endif
 
 

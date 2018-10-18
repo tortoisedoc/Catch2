@@ -20,26 +20,6 @@
 #include <stdio.h>
 #include <sstream>
 
-namespace Catch {
-    std::string toString( const std::pair<int, int>& value ) {
-        std::ostringstream oss;
-        oss << "std::pair( " << value.first << ", " << value.second << " )";
-        return oss.str();
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-TEST_CASE
-(
-    "Parsing a std::pair",
-    "[Tricky][std::pair]"
-)
-{
-    std::pair<int, int> aNicePair( 1, 2 );
-
-    REQUIRE( (std::pair<int, int>( 1, 2 )) == aNicePair );
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 TEST_CASE
 (
@@ -175,7 +155,7 @@ namespace ObjectWithConversions
     ///////////////////////////////////////////////////////////////////////////////
     TEST_CASE
     (
-        "Operators at different namespace levels not hijacked by Koenig lookup",
+        "Implicit conversions are supported inside assertion macros",
         "[Tricky][approvals]"
     )
     {
@@ -232,28 +212,28 @@ struct is_true
 
 TEST_CASE( "(unimplemented) static bools can be evaluated", "[Tricky]" )
 {
-    SECTION("compare to true","")
+    SECTION("compare to true")
     {
         REQUIRE( is_true<true>::value == true );
         REQUIRE( true == is_true<true>::value );
     }
-    SECTION("compare to false","")
+    SECTION("compare to false")
     {
         REQUIRE( is_true<false>::value == false );
         REQUIRE( false == is_true<false>::value );
     }
 
-    SECTION("negation", "")
+    SECTION("negation")
     {
         REQUIRE( !is_true<false>::value );
     }
 
-    SECTION("double negation","")
+    SECTION("double negation")
     {
         REQUIRE( !!is_true<true>::value );
     }
 
-    SECTION("direct","")
+    SECTION("direct")
     {
         REQUIRE( is_true<true>::value );
         REQUIRE_FALSE( is_true<false>::value );

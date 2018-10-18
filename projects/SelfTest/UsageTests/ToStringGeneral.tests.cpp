@@ -116,6 +116,20 @@ TEST_CASE("Static arrays are convertible to string", "[toString]") {
     }
 }
 
+#ifdef CATCH_CONFIG_CPP17_STRING_VIEW
+
+TEST_CASE("String views are stringified like other strings", "[toString][approvals]") {
+    std::string_view view{"abc"};
+    CHECK(Catch::Detail::stringify(view) == R"("abc")");
+
+    std::string_view arr[] { view };
+    CHECK(Catch::Detail::stringify(arr) == R"({ "abc" })");
+}
+
+#endif
+
+namespace {
+
 struct WhatException : std::exception {
     char const* what() const noexcept override {
         return "This exception has overriden what() method";
@@ -135,6 +149,8 @@ std::ostream& operator<<(std::ostream& out, OperatorException const&) {
 struct StringMakerException : std::exception {
     ~StringMakerException() override;
 };
+
+} // end anonymous namespace
 
 namespace Catch {
 template <>

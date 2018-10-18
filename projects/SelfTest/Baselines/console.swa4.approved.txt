@@ -3,6 +3,8 @@
 <exe-name> is a <version> host application.
 Run with -? for options
 
+Randomness seeded to: 1
+
 -------------------------------------------------------------------------------
 # A test name that starts with a #
 -------------------------------------------------------------------------------
@@ -134,6 +136,18 @@ Compilation.tests.cpp:<line number>
 
 Compilation.tests.cpp:<line number>:
 PASSED:
+
+-------------------------------------------------------------------------------
+#1403
+-------------------------------------------------------------------------------
+Compilation.tests.cpp:<line number>
+...............................................................................
+
+Compilation.tests.cpp:<line number>:
+PASSED:
+  REQUIRE( h1 == h2 )
+with expansion:
+  [1403 helper] == [1403 helper]
 
 -------------------------------------------------------------------------------
 #748 - captures with unexpected exceptions
@@ -341,6 +355,6 @@ with expansion:
   !true
 
 ===============================================================================
-test cases: 14 | 11 passed | 1 failed | 2 failed as expected
-assertions: 38 | 31 passed | 4 failed | 3 failed as expected
+test cases: 15 | 12 passed | 1 failed | 2 failed as expected
+assertions: 39 | 32 passed | 4 failed | 3 failed as expected
 

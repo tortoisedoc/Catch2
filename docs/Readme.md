@@ -12,6 +12,7 @@ Writing tests:
 * [Test fixtures](test-fixtures.md#top)
 * [Reporters](reporters.md#top)
 * [Event Listeners](event-listeners.md#top)
+* [Data Generators](generators.md#top)
 
 Fine tuning:
 * [Supplying your own main()](own-main.md#top)
@@ -20,7 +21,10 @@ Fine tuning:
 
 Running:
 * [Command line](command-line.md#top)
-* [CI and Build system integration](build-systems.md#top)
+
+Odds and ends:
+* [CMake integration](cmake-integration.md#top)
+* [CI and other miscellaneous pieces](ci-and-misc.md#top)
 
 FAQ:
 * [Why are my tests slow to compile?](slow-compiles.md#top)

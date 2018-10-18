@@ -24,7 +24,7 @@ def generate(v):
 
     seenHeaders = set([])
     rootPath = os.path.join( catchPath, 'include/' )
-    outputPath = os.path.join( catchPath, 'single_include/catch.hpp' )
+    outputPath = os.path.join( catchPath, 'single_include/catch2/catch.hpp' )
 
     globals = {
         'includeImpl' : True,
@@ -46,7 +46,7 @@ def generate(v):
     outDir = os.path.dirname(outputPath)
     if not os.path.exists(outDir):
         os.makedirs(outDir)
-    out = io.open( outputPath, 'w', newline='\n')
+    out = io.open( outputPath, 'w', newline='\n', encoding='utf-8')
 
     def write( line ):
         if globals['includeImpl'] or globals['implIfDefs'] == -1:

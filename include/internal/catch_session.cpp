@@ -119,10 +119,12 @@ namespace Catch {
     Session::Session() {
         static bool alreadyInstantiated = false;
         if( alreadyInstantiated ) {
-            try         { CATCH_INTERNAL_ERROR( "Only one instance of Catch::Session can ever be used" ); }
-            catch(...)  { getMutableRegistryHub().registerStartupException(); }
+            CATCH_TRY { CATCH_INTERNAL_ERROR( "Only one instance of Catch::Session can ever be used" ); }
+            CATCH_CATCH_ALL { getMutableRegistryHub().registerStartupException(); }
         }
 
+        // There cannot be exceptions at startup in no-exception mode.
+#if !defined(CATCH_CONFIG_DISABLE_EXCEPTIONS)
         const auto& exceptions = getRegistryHub().getStartupExceptionRegistry().getExceptions();
         if ( !exceptions.empty() ) {
             m_startupExceptions = true;
@@ -137,6 +139,7 @@ namespace Catch {
                 }
             }
         }
+#endif
 
         alreadyInstantiated = true;
         m_cli = makeCommandLineParser( m_configData );
@@ -182,22 +185,8 @@ namespace Catch {
         return 0;
     }
 
-    void Session::useConfigData( ConfigData const& configData ) {
-        m_configData = configData;
-        m_config.reset();
-    }
-
-    int Session::run( int argc, char* argv[] ) {
-        if( m_startupExceptions )
-            return 1;
-        int returnCode = applyCommandLine( argc, argv );
-        if( returnCode == 0 )
-            returnCode = run();
-        return returnCode;
-    }
-
 #if defined(CATCH_CONFIG_WCHAR) && defined(WIN32) && defined(UNICODE)
-    int Session::run( int argc, wchar_t* const argv[] ) {
+    int Session::applyCommandLine( int argc, wchar_t const * const * argv ) {
 
         char **utf8Argv = new char *[ argc ];
 
@@ -209,7 +198,7 @@ namespace Catch {
             WideCharToMultiByte( CP_UTF8, 0, argv[i], -1, utf8Argv[i], bufSize, NULL, NULL );
         }
 
-        int returnCode = run( argc, utf8Argv );
+        int returnCode = applyCommandLine( argc, utf8Argv );
 
         for ( int i = 0; i < argc; ++i )
             delete [] utf8Argv[ i ];
@@ -219,6 +208,12 @@ namespace Catch {
         return returnCode;
     }
 #endif
+
+    void Session::useConfigData( ConfigData const& configData ) {
+        m_configData = configData;
+        m_config.reset();
+    }
+
     int Session::run() {
         if( ( m_configData.waitForKeypress & WaitForKeypress::BeforeStart ) != 0 ) {
             Catch::cout() << "...waiting for enter/ return before starting" << std::endl;
@@ -251,11 +246,11 @@ namespace Catch {
         if( m_startupExceptions )
             return 1;
 
-        if( m_configData.showHelp || m_configData.libIdentify )
+        if (m_configData.showHelp || m_configData.libIdentify) {
             return 0;
+        }
 
-        try
-        {
+        CATCH_TRY {
             config(); // Force config to be constructed
 
             seedRng( *m_config );
@@ -273,10 +268,12 @@ namespace Catch {
             // of 256 tests has failed
             return (std::min) (MaxExitCode, (std::max) (totals.error, static_cast<int>(totals.assertions.failed)));
         }
+#if !defined(CATCH_CONFIG_DISABLE_EXCEPTIONS)
         catch( std::exception& ex ) {
             Catch::cerr() << ex.what() << std::endl;
             return MaxExitCode;
         }
+#endif
     }
 
 } // end namespace Catch
